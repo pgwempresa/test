@@ -61,7 +61,7 @@ $payload['pagePath'] = $payload['pagePath'] ?? $data['pagePath'];
 $payload['paymentDescription'] = $payload['paymentDescription'] ?? $data['paymentDescription'];
 
 persist_transaction_snapshot($payload);
-send_utmify_order($payload);
+$payload['_utmify_generated'] = send_utmify_order($payload);
 
 if ($idempotencyKey !== '') {
     kv_set_json('idem:' . $idempotencyKey, $payload);

@@ -349,19 +349,38 @@ function send_utmify_order(array $payload) {
     $order = build_utmify_order_payload($payload);
 
     if (!$order) {
-        return false;
+        return [
+            'attempted' => false,
+            'accepted' => false,
+            'reason' => 'missing_order_data'
+        ];
     }
 
     $token = get_utmify_token();
 
     if ($token === '') {
-        return false;
+        return [
+            'attempted' => false,
+            'accepted' => false,
+            'reason' => 'missing_token',
+            'orderId' => $order['orderId'],
+            'statusName' => $order['status']
+        ];
     }
 
     $dedupeKey = 'utmify:' . $order['orderId'] . ':' . $order['status'];
 
-    if (kv_get_json($dedupeKey)) {
-        return true;
+    $previous = kv_get_json($dedupeKey);
+
+    if (is_array($previous) && !empty($previous['ok'])) {
+        return [
+            'attempted' => false,
+            'accepted' => true,
+            'deduped' => true,
+            'orderId' => $order['orderId'],
+            'statusName' => $order['status'],
+            'httpStatus' => $previous['status'] ?? null
+        ];
     }
 
     $ch = curl_init('https://api.utmify.com.br/api-credentials/orders');
@@ -381,15 +400,37 @@ function send_utmify_order(array $payload) {
 
     $ok = $response !== false && $curlError === '' && $httpCode >= 200 && $httpCode < 300;
 
-    kv_set_json($dedupeKey, [
+    $summary = [
         'ok' => $ok,
         'status' => $httpCode ?: 0,
         'sent_at' => gmdate('c'),
         'response' => is_string($response) ? substr($response, 0, 500) : '',
         'error' => $curlError
+    ];
+
+    kv_set_json($dedupeKey, $summary);
+    kv_set_json('utmify:last', [
+        'orderId' => $order['orderId'],
+        'statusName' => $order['status'],
+        'product' => $order['products'][0]['id'] ?? null,
+        'amountInCents' => $order['commission']['totalPriceInCents'] ?? null,
+        'ok' => $ok,
+        'httpStatus' => $httpCode ?: 0,
+        'sent_at' => $summary['sent_at'],
+        'response' => $summary['response'],
+        'error' => $curlError
     ]);
 
-    return $ok;
+    return [
+        'attempted' => true,
+        'accepted' => $ok,
+        'deduped' => false,
+        'orderId' => $order['orderId'],
+        'statusName' => $order['status'],
+        'httpStatus' => $httpCode ?: 0,
+        'response' => $summary['response'],
+        'error' => $curlError
+    ];
 }
 
 function persist_transaction_snapshot(array $payload) {

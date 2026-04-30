@@ -32,7 +32,8 @@ json_response([
     'utmify' => [
         'configured' => get_utmify_token() !== '',
         'token_present' => get_utmify_token() !== '',
-        'is_test' => env_first(['UTMIFY_IS_TEST'], 'false') === 'true'
+        'is_test' => env_first(['UTMIFY_IS_TEST'], 'false') === 'true',
+        'last' => kv_get_json('utmify:last')
     ],
     'routes' => [
         'create' => '/api/create-mbway.php',
