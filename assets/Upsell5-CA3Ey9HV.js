@@ -1,4 +1,4 @@
-import{s as a,o as p,j as e}from"./index-jPJOmtKw.js";import{t as u}from"./tiktok-logo-full-DIcxqYI2.js";import{u as f,L as h}from"./use-mbway-system.js";import{P as j}from"./MBWAYPaymentPopup-C8F4Odni.js";import{C as b}from"./credit-card-DVuEp50a.js";import{Z as y}from"./zap-00Hh9blk.js";/**
+import{s as a,o as p,j as e}from"./index-jPJOmtKw.js";import{t as u}from"./tiktok-logo-full-DIcxqYI2.js";import{u as f,L as h}from"./use-mbway-system.js";import{P as j}from"./MbwayPaymentPopup-C8F4Odni.js";import{C as b}from"./credit-card-DVuEp50a.js";import{Z as y}from"./zap-00Hh9blk.js";/**
  * @license lucide-react v0.462.0 - ISC
  *
  * This source code is licensed under the ISC license.
