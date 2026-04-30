@@ -125,13 +125,15 @@ function normalize_waymb_create_payload(array $data) {
     $payer['document'] = preg_replace('/\D+/', '', (string) ($payer['document'] ?? '999999999'));
     $payer['phone'] = preg_replace('/\D+/', '', (string) ($payer['phone'] ?? '912345678'));
     $data['payer'] = $payer;
+    $data['trackingParameters'] = normalize_tracking_parameters($data['trackingParameters'] ?? []);
+    $data['pagePath'] = isset($data['pagePath']) ? (string) $data['pagePath'] : '';
 
     if (empty($data['callbackUrl']) && $origin) {
         $data['callbackUrl'] = $origin . '/api/waymb-webhook.php';
     }
 
     if (empty($data['success_url']) && $origin) {
-        $data['success_url'] = $origin . '/upsell-1/';
+        $data['success_url'] = $origin . '/up1/';
     }
 
     if (empty($data['failed_url']) && $origin) {
@@ -219,8 +221,179 @@ function kv_set_json($key, array $value) {
     return $response !== false;
 }
 
+function normalize_tracking_parameters($tracking) {
+    $keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck'];
+    $result = [];
+
+    if (!is_array($tracking)) {
+        $tracking = [];
+    }
+
+    foreach ($keys as $key) {
+        $value = $tracking[$key] ?? null;
+        $result[$key] = $value === null || $value === '' ? null : (string) $value;
+    }
+
+    return $result;
+}
+
+function get_utmify_token() {
+    $token = env_first(['UTMIFY_API_TOKEN', 'UTMIFY_TOKEN'], '');
+
+    if ($token !== '') {
+        return $token;
+    }
+
+    $stored = kv_get_json('utmify_credentials');
+
+    return is_array($stored) && !empty($stored['api_token']) ? (string) $stored['api_token'] : '';
+}
+
+function get_transaction_id(array $payload) {
+    return $payload['id'] ?? $payload['transactionID'] ?? $payload['transactionId'] ?? $payload['transaction_id'] ?? null;
+}
+
+function get_utmify_status(array $payload) {
+    $status = normalize_waymb_status($payload['status'] ?? 'PENDING');
+
+    if ($status === 'COMPLETED') {
+        return 'paid';
+    }
+
+    if (in_array($status, ['DECLINED', 'CANCELED', 'CANCELLED', 'FAILED'], true)) {
+        return 'refused';
+    }
+
+    return 'waiting_payment';
+}
+
+function get_utmify_product(array $payload) {
+    $path = (string) ($payload['pagePath'] ?? '');
+    $description = (string) ($payload['paymentDescription'] ?? 'Pagamento MB WAY');
+
+    $map = [
+        '/confirmar-saque' => ['front', 'Ticket inicial'],
+        '/back-redirect' => ['back_redirect', 'Back redirect'],
+        '/up1' => ['up1', 'Upsell 1'],
+        '/upsell-1' => ['up1', 'Upsell 1'],
+        '/up2' => ['up2', 'Upsell 2'],
+        '/upsell-2' => ['up2', 'Upsell 2'],
+        '/up3' => ['up3', 'Upsell 3'],
+        '/upsell-3' => ['up3', 'Upsell 3'],
+        '/up4' => ['up4', 'Upsell 4'],
+        '/upsell-4' => ['up4', 'Upsell 4'],
+        '/up5' => ['upsell-5', 'Upsell 5'],
+        '/upsell-5' => ['upsell-5', 'Upsell 5']
+    ];
+
+    foreach ($map as $needle => $product) {
+        if ($path !== '' && strpos($path, $needle) === 0) {
+            return $product;
+        }
+    }
+
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $description));
+    $slug = trim($slug ?: 'mbway', '-');
+
+    return [$slug, $description ?: 'Pagamento MB WAY'];
+}
+
+function build_utmify_order_payload(array $payload) {
+    $txId = get_transaction_id($payload);
+
+    if (!$txId) {
+        return null;
+    }
+
+    $payer = isset($payload['payer']) && is_array($payload['payer']) ? $payload['payer'] : [];
+    $amount = isset($payload['amount']) ? (float) $payload['amount'] : 0.0;
+    $priceInCents = max(0, (int) round($amount * 100));
+    [$productId, $productName] = get_utmify_product($payload);
+    $status = get_utmify_status($payload);
+    $now = gmdate('c');
+
+    return [
+        'isTest' => env_first(['UTMIFY_IS_TEST'], 'false') === 'true',
+        'status' => $status,
+        'orderId' => (string) $txId,
+        'customer' => [
+            'name' => (string) ($payer['name'] ?? 'Cliente'),
+            'email' => (string) ($payer['email'] ?? ''),
+            'phone' => (string) ($payer['phone'] ?? ''),
+            'country' => 'PT',
+            'document' => preg_replace('/\D+/', '', (string) ($payer['document'] ?? ''))
+        ],
+        'platform' => 'WayMB',
+        'products' => [[
+            'id' => $productId,
+            'name' => $productName,
+            'planId' => $productId,
+            'planName' => $productName,
+            'quantity' => 1,
+            'priceInCents' => $priceInCents
+        ]],
+        'createdAt' => (string) ($payload['createdAt'] ?? $payload['created_at'] ?? $now),
+        'commission' => [
+            'gatewayFeeInCents' => 0,
+            'totalPriceInCents' => $priceInCents,
+            'userCommissionInCents' => $priceInCents
+        ],
+        'refundedAt' => null,
+        'approvedDate' => $status === 'paid' ? (string) ($payload['approvedDate'] ?? $payload['paidAt'] ?? $payload['paid_at'] ?? $now) : null,
+        'paymentMethod' => strtoupper((string) ($payload['method'] ?? 'MBWAY')),
+        'trackingParameters' => normalize_tracking_parameters($payload['trackingParameters'] ?? [])
+    ];
+}
+
+function send_utmify_order(array $payload) {
+    $order = build_utmify_order_payload($payload);
+
+    if (!$order) {
+        return false;
+    }
+
+    $token = get_utmify_token();
+
+    if ($token === '') {
+        return false;
+    }
+
+    $dedupeKey = 'utmify:' . $order['orderId'] . ':' . $order['status'];
+
+    if (kv_get_json($dedupeKey)) {
+        return true;
+    }
+
+    $ch = curl_init('https://api.utmify.com.br/api-credentials/orders');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($order, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'x-api-token: ' . $token
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    $ok = $response !== false && $curlError === '' && $httpCode >= 200 && $httpCode < 300;
+
+    kv_set_json($dedupeKey, [
+        'ok' => $ok,
+        'status' => $httpCode ?: 0,
+        'sent_at' => gmdate('c'),
+        'response' => is_string($response) ? substr($response, 0, 500) : '',
+        'error' => $curlError
+    ]);
+
+    return $ok;
+}
+
 function persist_transaction_snapshot(array $payload) {
-    $txId = $payload['id'] ?? $payload['transactionID'] ?? $payload['transactionId'] ?? null;
+    $txId = get_transaction_id($payload);
 
     if (!$txId) {
         return;

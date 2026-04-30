@@ -55,5 +55,30 @@ if (isset($payload['status'])) {
     $payload['status'] = normalize_waymb_status($payload['status']);
 }
 
+$existing = kv_get_json('tx:' . $data['id']);
+
+if (is_array($existing)) {
+    if (empty($payload['payer']) && !empty($existing['payer'])) {
+        $payload['payer'] = $existing['payer'];
+    }
+
+    if (empty($payload['trackingParameters']) && !empty($existing['trackingParameters'])) {
+        $payload['trackingParameters'] = $existing['trackingParameters'];
+    }
+
+    if (empty($payload['pagePath']) && !empty($existing['pagePath'])) {
+        $payload['pagePath'] = $existing['pagePath'];
+    }
+
+    if (empty($payload['amount']) && !empty($existing['amount'])) {
+        $payload['amount'] = $existing['amount'];
+    }
+
+    if (empty($payload['method']) && !empty($existing['method'])) {
+        $payload['method'] = $existing['method'];
+    }
+}
+
 persist_transaction_snapshot($payload);
+send_utmify_order($payload);
 json_response($payload, $result['status']);

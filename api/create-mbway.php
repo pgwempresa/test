@@ -53,7 +53,15 @@ if (isset($payload['status'])) {
     $payload['status'] = normalize_waymb_status($payload['status']);
 }
 
+$payload['amount'] = $payload['amount'] ?? $data['amount'];
+$payload['method'] = $payload['method'] ?? $data['method'];
+$payload['payer'] = $payload['payer'] ?? $data['payer'];
+$payload['trackingParameters'] = $payload['trackingParameters'] ?? $data['trackingParameters'];
+$payload['pagePath'] = $payload['pagePath'] ?? $data['pagePath'];
+$payload['paymentDescription'] = $payload['paymentDescription'] ?? $data['paymentDescription'];
+
 persist_transaction_snapshot($payload);
+send_utmify_order($payload);
 
 if ($idempotencyKey !== '') {
     kv_set_json('idem:' . $idempotencyKey, $payload);
