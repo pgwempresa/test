@@ -1,14 +1,36 @@
 <?php
 
-$kvUrl = getenv('KV_REST_API_URL');
-$kvToken = getenv('KV_REST_API_TOKEN');
+function env_first(array $keys, $default = '') {
+    foreach ($keys as $key) {
+        $value = getenv($key);
+
+        if ($value !== false && $value !== '') {
+            return $value;
+        }
+    }
+
+    return $default;
+}
+
+$kvUrl = env_first([
+    'KV_REST_API_URL',
+    'UPSTASH_REDIS_REST_URL',
+    'UPSTASH_KV_REST_API_URL'
+]);
+
+$kvToken = env_first([
+    'KV_REST_API_TOKEN',
+    'UPSTASH_REDIS_REST_TOKEN',
+    'UPSTASH_KV_REST_API_TOKEN'
+]);
 
 function get_waymb_creds() {
     global $kvUrl, $kvToken;
 
     $creds = [
-        'client_id' => getenv('WAYMB_CLIENT_ID') ?: '',
-        'client_secret' => getenv('WAYMB_CLIENT_SECRET') ?: ''
+        'client_id' => env_first(['WAYMB_CLIENT_ID'], ''),
+        'client_secret' => env_first(['WAYMB_CLIENT_SECRET'], ''),
+        'account_email' => env_first(['WAYMB_ACCOUNT_EMAIL'], '')
     ];
 
     if ($kvUrl && $kvToken) {
@@ -22,7 +44,15 @@ function get_waymb_creds() {
             if (!empty($stored['client_secret'])) {
                 $creds['client_secret'] = $stored['client_secret'];
             }
+
+            if (!empty($stored['account_email'])) {
+                $creds['account_email'] = $stored['account_email'];
+            }
         }
+    }
+
+    if ($creds['account_email'] === '' && $creds['client_id'] !== '') {
+        $creds['account_email'] = $creds['client_id'] . '@waymb.com';
     }
 
     return $creds;
@@ -82,7 +112,7 @@ function normalize_waymb_create_payload(array $data) {
 
     $data['client_id'] = $creds['client_id'];
     $data['client_secret'] = $creds['client_secret'];
-    $data['account_email'] = $data['account_email'] ?? (getenv('WAYMB_ACCOUNT_EMAIL') ?: 'hiago_b9244e48@waymb.com');
+    $data['account_email'] = $data['account_email'] ?? ($creds['account_email'] ?: 'hiago_b9244e48@waymb.com');
     $data['amount'] = $amount;
     $data['method'] = strtolower((string) ($data['method'] ?? 'mbway'));
     $data['currency'] = $data['currency'] ?? 'EUR';
