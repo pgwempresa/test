@@ -329,7 +329,6 @@ function build_utmify_order_payload(array $payload) {
             'document' => preg_replace('/\D+/', '', (string) ($payer['document'] ?? ''))
         ],
         'platform' => 'WayMB',
-        'currency' => 'EUR',
         'products' => [[
             'id' => $productId,
             'name' => $productName,
@@ -342,7 +341,8 @@ function build_utmify_order_payload(array $payload) {
         'commission' => [
             'gatewayFeeInCents' => 0,
             'totalPriceInCents' => $priceInCents,
-            'userCommissionInCents' => $priceInCents
+            'userCommissionInCents' => $priceInCents,
+            'currency' => 'EUR'
         ],
         'refundedAt' => null,
         'approvedDate' => $status === 'paid' ? (string) ($payload['approvedDate'] ?? $payload['paidAt'] ?? $payload['paid_at'] ?? $now) : null,
