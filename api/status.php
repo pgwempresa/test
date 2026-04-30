@@ -27,7 +27,7 @@ json_response([
         'configured' => !empty($creds['client_id']) && !empty($creds['client_secret']),
         'client_id_present' => !empty($creds['client_id']),
         'client_secret_present' => !empty($creds['client_secret']),
-        'account_email' => $creds['account_email'] ?: null
+        'account_email_present' => !empty($creds['account_email'])
     ],
     'utmify' => [
         'configured' => get_utmify_token() !== '',
