@@ -329,6 +329,7 @@ function build_utmify_order_payload(array $payload) {
             'document' => preg_replace('/\D+/', '', (string) ($payer['document'] ?? ''))
         ],
         'platform' => 'WayMB',
+        'currency' => 'EUR',
         'products' => [[
             'id' => $productId,
             'name' => $productName,
