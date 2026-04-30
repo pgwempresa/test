@@ -40,9 +40,9 @@
       var origPush = history.pushState, origReplace = history.replaceState;
       history.pushState = function (s, t, u) { return origPush.call(history, s, t, addPreservedToUrl(u)); };
       history.replaceState = function (s, t, u) { return origReplace.call(history, s, t, addPreservedToUrl(u)); };
-      window.__FUNIL_REDIRECT_LINK = "/upsell-1/";
-      window.__FUNIL_REDIRECT_BACK = "/upsell-1/";
-      window.__TTK_PAID_REDIRECT_URL = "/upsell-1/";
+      window.__FUNIL_REDIRECT_LINK = "";
+      window.__FUNIL_REDIRECT_BACK = "";
+      window.__TTK_PAID_REDIRECT_URL = "";
       var origFetch = window.fetch;
       window.fetch = function (url, opts) {
         var nextUrl = url, nextOpts = opts || {}, originalUrl = typeof url === 'string' ? url : '';
@@ -57,9 +57,7 @@
         return origFetch.call(this, nextUrl, nextOpts).then(function (res) {
           if (typeof originalUrl === 'string' && originalUrl.indexOf('check-mbway') !== -1 && res.ok) {
             res.clone().json().then(function (data) {
-              if (data && (data.status === 'COMPLETED' || data.status === 'paid' || data.status === 'approved')) {
-                window.location.href = (window.__TTK_PAID_REDIRECT_URL || "/upsell-1/") + (window.__TTK_PRESERVED_QUERY ? "?" + window.__TTK_PRESERVED_QUERY : "");
-              }
+              if (data && (data.status === 'COMPLETED' || data.status === 'paid' || data.status === 'approved')) { window.dispatchEvent(new CustomEvent('mbway:paid', { detail: data })); }
             }).catch(function () { });
           }
           return res;
