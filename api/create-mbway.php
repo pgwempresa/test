@@ -16,7 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-$data = normalize_waymb_create_payload(read_json_input());
+$input = read_json_input();
+$idempotencyKey = '';
+
+if (!empty($input['idempotency_key'])) {
+    $idempotencyKey = preg_replace('/[^a-zA-Z0-9:_-]/', '', (string) $input['idempotency_key']);
+    $cached = kv_get_json('idem:' . $idempotencyKey);
+
+    if (is_array($cached)) {
+        $cached['idempotent_replay'] = true;
+        json_response($cached, 200);
+    }
+}
+
+$data = normalize_waymb_create_payload($input);
 $result = waymb_request('/transactions/create', $data, 30);
 
 if (!$result['ok']) {
@@ -41,4 +54,9 @@ if (isset($payload['status'])) {
 }
 
 persist_transaction_snapshot($payload);
+
+if ($idempotencyKey !== '') {
+    kv_set_json('idem:' . $idempotencyKey, $payload);
+}
+
 json_response($payload, $result['status']);
