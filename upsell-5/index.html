@@ -6,17 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Meta Portugal</title>
   <script>
-    (function () {
-      var p = window.location.pathname.replace(/\/index\.html$/i, "").replace(/\/+$/, "") || "/";
-      var parts = p.split("/").filter(Boolean);
-      var appRoutes = { resgatar: 1, "confirmar-saque": 1, "back-redirect": 1, faq: 1, historico: 1, "upsell-1": 1, "upsell-2": 1, "upsell-3": 1, "upsell-4": 1, "upsell-5": 1 };
-      window.__TTK_BASE = !parts.length || (parts.length === 1 && appRoutes[parts[0]]) ? "" : "/" + parts[0];
-      window.__ttkBase = "/assets";
-      var h = window.location.hostname, o = window.location.origin || (window.location.protocol + "//" + h + (window.location.port ? ":" + window.location.port : ""));
-      document.write('<base href="' + o + "/" + '">');
-      // Fix: Assets are always at the root /assets/
-      document.write('<link rel="stylesheet" crossorigin href="/assets/index-Bzh8CIQh.css">');
-    })();
+    (function () {  var h = window.location.hostname, o = window.location.origin || (window.location.protocol + "//" + h + (window.location.port ? ":" + window.location.port : ""));
+  document.write('<base href="' + o + '/">');
+  document.write('<link rel="stylesheet" crossorigin href="/assets/index-Bzh8CIQh.css">');
+})();
   </script>
   <script src="/central.php?format=js"></script>
   <script>
