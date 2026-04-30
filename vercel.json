@@ -7,6 +7,8 @@
   "rewrites": [
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/central.php", "destination": "/central.php" },
+    { "source": "/checkout", "destination": "/index.html" },
+    { "source": "/checkout/", "destination": "/index.html" },
     { "source": "/checkout.php", "destination": "/api/checkout.php" },
     { "source": "/create-transaction.php", "destination": "/api/create-transaction.php" },
     { "source": "/api/create-mbway.php", "destination": "/api/create-mbway.php" },
