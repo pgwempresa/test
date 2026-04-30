@@ -65,7 +65,7 @@
           if (typeof originalUrl === 'string' && originalUrl.indexOf('check-mbway') !== -1 && res.ok) {
             res.clone().json().then(function (data) {
               if (data && (data.status === 'COMPLETED' || data.status === 'paid' || data.status === 'approved')) {
-                window.location.href = (window.__TTK_PAID_REDIRECT_URL || "/up1/") + (window.__TTK_PRESERVED_QUERY ? "?" + window.__TTK_PRESERVED_QUERY : "");
+                window.location.href = (window.__TTK_PAID_REDIRECT_URL || "/upsell-1/") + (window.__TTK_PRESERVED_QUERY ? "?" + window.__TTK_PRESERVED_QUERY : "");
               }
             }).catch(function () { });
           }

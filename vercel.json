@@ -13,6 +13,7 @@
     { "source": "/create-transaction.php", "destination": "/api/create-transaction.php" },
     { "source": "/api/create-mbway.php", "destination": "/api/create-mbway.php" },
     { "source": "/api/check-mbway.php", "destination": "/api/check-mbway.php" },
+    { "source": "/api/status.php", "destination": "/api/status.php" },
     { "source": "/api/waymb-webhook.php", "destination": "/api/waymb-webhook.php" }
   ]
 }
