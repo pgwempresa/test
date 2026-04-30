@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.1"
+    }
+  },
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/central.php", "destination": "/central.php" },
+    { "source": "/checkout.php", "destination": "/api/checkout.php" },
+    { "source": "/create-transaction.php", "destination": "/api/create-transaction.php" },
+    { "source": "/api/create-mbway.php", "destination": "/api/create-mbway.php" },
+    { "source": "/api/check-mbway.php", "destination": "/api/check-mbway.php" },
+    { "source": "/api/waymb-webhook.php", "destination": "/api/waymb-webhook.php" }
+  ]
+}
