@@ -311,11 +311,10 @@ function build_utmify_order_payload(array $payload) {
     [$productId, $productName] = get_utmify_product($payload);
     $status = get_utmify_status($payload);
     $now = gmdate('c', time() - 300);
-    $safeCreatedAt = env_first(['UTMIFY_SAFE_CREATED_AT'], '2025-01-01T00:00:00+00:00');
     $createdAt = (string) ($payload['createdAt'] ?? $payload['created_at'] ?? $now);
 
     if (strtotime($createdAt) === false || strtotime($createdAt) > time() - 60) {
-        $createdAt = $safeCreatedAt;
+        $createdAt = $now;
     }
 
     return [
