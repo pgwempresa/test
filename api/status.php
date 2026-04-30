@@ -29,6 +29,11 @@ json_response([
         'client_secret_present' => !empty($creds['client_secret']),
         'account_email' => $creds['account_email'] ?: null
     ],
+    'utmify' => [
+        'configured' => get_utmify_token() !== '',
+        'token_present' => get_utmify_token() !== '',
+        'is_test' => env_first(['UTMIFY_IS_TEST'], 'false') === 'true'
+    ],
     'routes' => [
         'create' => '/api/create-mbway.php',
         'check' => '/api/check-mbway.php',
